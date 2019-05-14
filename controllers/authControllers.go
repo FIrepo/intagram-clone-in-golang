@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"go-contacts/models"
 	u "go-contacts/utils"
 	"net/http"
@@ -49,26 +50,51 @@ var CheckMobileOTP = func(w http.ResponseWriter, r *http.Request) {
 }
 
 var UpdateProfile = func(w http.ResponseWriter, r *http.Request) {
-	id, _ := strconv.Atoi(r.Header.Get("user_id"))
-	requestParams := &models.RequestUserUpdate{
-		FirstName: r.FormValue("first_name"),
-		LastName:  r.FormValue("last_name"),
-		UserName:  r.FormValue("username"),
-		ID:        id,
+	err := r.ParseMultipartForm(200000) // grab the multipart form
+	if err != nil {
+		fmt.Fprintln(w, err)
+		return
 	}
-	resp := models.UpdateProfile(requestParams)
-	u.Respond(w, resp)
+	id, _ := strconv.Atoi(r.Header.Get("user_id"))
+	file, fileheader, err := r.FormFile("file")
+	if err != nil {
+		fmt.Println("error-----" + err.Error())
+	}
+	requestParams := &models.RequestUserUpdate{
+		FirstName:     r.FormValue("first_name"),
+		LastName:      r.FormValue("last_name"),
+		UserName:      r.FormValue("username"),
+		ID:            id,
+		File:          file,
+		FileHeader:    fileheader,
+		ProfileStatus: r.FormValue("profile_status"),
+	}
+	objvalidate, haserror := u.ValidateObject(requestParams)
+	if !haserror {
+		u.Respond(w, objvalidate)
+		return
+	} else {
+		resp := models.UpdateProfile(requestParams)
+		u.Respond(w, resp)
+		return
+	}
 }
 
-// // var Authenticate = func(w http.ResponseWriter, r *http.Request) {
+var CheckUserName = func(w http.ResponseWriter, r *http.Request) {
 
-// // 	account := &models.Account{}
-// // 	err := json.NewDecoder(r.Body).Decode(account) //decode the request body into struct and failed if any error occur
-// // 	if err != nil {
-// 		u.Respond(w, u.Message(false, "Invalid request"))
-// 		return
-// 	}
-
-// 	resp := models.Login(account.Email, account.Password)
-// 	u.Respond(w, resp)
-// }
+	requestParams := &models.UserName{}
+	err := json.NewDecoder(r.Body).Decode(requestParams) //decode the request body into struct and failed if any error occur
+	if err != nil {
+		u.Respond(w, u.Message(0, "Invalid request"))
+		return
+	}
+	objvalidate, haserror := u.ValidateObject(requestParams)
+	if !haserror {
+		u.Respond(w, objvalidate)
+		return
+	} else {
+		resp := models.CheckUserName(requestParams)
+		u.Respond(w, resp)
+		return
+	}
+}

@@ -26,11 +26,11 @@ func ValidateObject(requestBody interface{}) (map[string]interface{}, bool) {
 	err := validate.Struct(requestBody)
 	if err != nil {
 		if _, ok := err.(*validator.InvalidValidationError); ok {
-			fmt.Println(err)
+			// fmt.Println(err)
 			return map[string]interface{}{"response_code": 0, "response_message": err.Error()}, false
 		}
 		for _, err := range err.(validator.ValidationErrors) {
-			fmt.Println(err)
+			// fmt.Println(err)
 			return map[string]interface{}{"response_code": 0, "response_message": err.Field() + " field is required"}, false
 		}
 	}

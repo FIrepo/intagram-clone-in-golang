@@ -121,8 +121,23 @@ func VideoList(requestParams *RequestList) map[string]interface{} {
 		conn.Close()
 		return u.Message(0, err.Error())
 	}
+	queryalltogether := ""
+	objresponsedataall := make([]ResponseStruct, 0)
+	if requestParams.Title == "" {
+		queryalltogether = "SELECT id, title, concat('" + ApiPath + "',video_url) as video_url,concat('" + ApiPath + "',thumb_url) as thumb_url, category, language, created_at, view_count FROM public.videostatus where 1=1 " + whereCondition + whereConditionAll + "  order by created_at desc;"
+	} else {
+		whereConditionAll += " and lower(title) like '%" + strings.ToLower(requestParams.Title) + "%'"
+		queryalltogether = "SELECT id, title, concat('" + ApiPath + "',video_url) as video_url,concat('" + ApiPath + "',thumb_url) as thumb_url, category, language, created_at, view_count FROM public.videostatus where 1=1 " + whereCondition + whereConditionAll + "  order by created_at desc;"
+	}
+	fmt.Println(queryalltogether)
+	err = conn.Select(&objresponsedataall, queryalltogether)
+	if err != nil {
+		conn.Close()
+		return u.Message(0, err.Error())
+	}
 	data["trending"] = objresponsetreding
 	data["all"] = objresponsedata
+	data["alltogether"] = objresponsedataall
 	resp["response_data"] = data
 	conn.Close()
 	return resp
@@ -153,12 +168,12 @@ func DeleteVideo(requestParams *RequestViewCountDelete) map[string]interface{} {
 		conn.Close()
 		return u.Message(0, err.Error())
 	}
-	go deleteFile(video_url)
-	go deleteFile(thumb_url)
+	go DeleteFile(video_url)
+	go DeleteFile(thumb_url)
 	conn.Close()
 	return resp
 }
-func deleteFile(path string) {
+func DeleteFile(path string) {
 	// delete file
 	var err = os.Remove(path)
 	if err != nil {
